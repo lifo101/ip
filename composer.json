@@ -1,0 +1,20 @@
+{
+    "name": "lifo/ip",
+    "description": "IP address helper PHP library for working with IPv4 and IPv6 addresses",
+    "keywords": ["ip address", "ip", "ipv4", "ipv6"],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jason Morriss",
+            "email": "lifo2013@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0",
+        "ext-bcmath": "*"
+    },
+    "autoload": {
+        "psr-0": { "Lifo\\IP\\": "src/" }
+    }
+}
