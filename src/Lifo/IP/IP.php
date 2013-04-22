@@ -19,11 +19,6 @@ namespace Lifo\IP;
  */
 abstract class IP
 {
-    const MAX_UINT_32  = '4294967295';
-    const MAX_INT_32   = '2147483647';
-    const MAX_UINT_128 = '340282366920938463463374607431768211455';
-    const MAX_INT_128  = '170141183460469231731687303715884105727';
-
     /**
      * Convert a human readable (presentational) IP address string into a decimal string.
      */
