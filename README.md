@@ -6,7 +6,8 @@ __This library is a work-in-progress (WIP).__
 
 ### Notes
 
-This library is currently missing support for Subnets and other miscellaneous IP features. I will work on those soon. I have also not decided on a final structure for the classes. Right now everything is simply a static class method _(so I don't pollute the global namespace)_. 
+This library is not complete and is missing certain CIDR, Subnet and other miscellaneous IP features. 
+Feel free to send pull requests with missing functionality.
 
 ### Examples
 
@@ -14,6 +15,7 @@ The translation routines are IP agnostic, meaning they don't care if you pass in
 
 ```php
 use Lifo\IP\IP;
+use Lifo\IP\CIDR:
 
 // IPv4
 echo '127.0.0.1 = ', IP::inet_ptod('127.0.0.1'), "\n";
@@ -24,6 +26,13 @@ echo '127.0.0.1 = ', IP::inet_ptoh('127.0.0.1'), " (hex)\n";
 echo '2001:4056::1 = ', IP::inet_ptod('2001:4056::1'), "\n";
 echo IP::inet_dtop('42541793049812452694190522094162280449'), " = 42541793049812452694190522094162280449\n";
 echo '2001:4056::1 = ', IP::inet_ptoh('2001:4056::1'), " (hex)\n";
+
+// CIDR 
+
+// note: the true CIDR block is calculated from the prefix (the ::1 is ignored)
+$ip = new CIDR('2001:4056::1/96');
+
+echo "$ip\n", implode(' - ', $ip->getRange()), " (" . number_format($ip->getTotal()) . " hosts)\n";
 ```
 
 ```
@@ -31,7 +40,11 @@ echo '2001:4056::1 = ', IP::inet_ptoh('2001:4056::1'), " (hex)\n";
 127.0.0.1 = 2130706433
 127.0.0.1 = 2130706433
 127.0.0.1 = 7f000001
+
 2001:4056::1 = 42541793049812452694190522094162280449
 2001:4056::1 = 42541793049812452694190522094162280449
 2001:4056::1 = 20014056000000000000000000000001
+
+2001:4056::1/96
+2001:4056:: - 2001:4056::ffff:ffff (4,294,967,296 hosts)
 ```
