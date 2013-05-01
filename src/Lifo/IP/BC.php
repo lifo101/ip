@@ -138,10 +138,10 @@ abstract class BC
     /**
      * Bitwise NOT two arbitrarily large numbers together.
      */
-    public static function bcnot($left)
+    public static function bcnot($left, $bits = null)
     {
         $right = 0;
-        $len = self::_bitwise($left, $right);
+        $len = self::_bitwise($left, $right, $bits);
         $value = '';
         for ($i=0; $i<$len; $i++) {
             $value .= $left{$i} == '1' ? '0' : '1';
@@ -184,14 +184,12 @@ abstract class BC
                 bcdiv(
                     mt_rand(0, mt_getrandmax()),
                     mt_getrandmax(),
-
                     strlen($max)
                 ),
                 bcsub(
                     bcadd($max, '1'),
                     $min
                 )
-
             ),
             $min
         );
