@@ -130,6 +130,10 @@ abstract class IP
      */
     public static function inet_expand($ip)
     {
+        // strip possible cidr notation off
+        if (($pos = strpos($ip, '/')) !== false) {
+            $ip = substr($ip, 0, $pos);
+        }
         $bytes = unpack('n*', inet_pton($ip));
         if (count($bytes) > 2) {
             return implode(':', array_map(function ($b) {

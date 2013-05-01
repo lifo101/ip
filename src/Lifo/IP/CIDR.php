@@ -20,12 +20,29 @@ namespace Lifo\IP;
  */
 class CIDR
 {
-    protected $ip;
+    const INTERSECT_NO              = 0;
+    const INTERSECT_YES             = 1;
+    const INTERSECT_LOW             = 2;
+    const INTERSECT_HIGH            = 3;
+
+    protected $start;
+    protected $end;
     protected $prefix;
     protected $version;
 
     private $cache;
 
+    /**
+     * Create a new CIDR object.
+     *
+     * The IP range can be arbitrary and does not have to fall on a valid CIDR
+     * range. Some methods will return different values depending if you ignore
+     * the prefix or not. By default all prefix sensitive methods will assume
+     * the prefix is used.
+     *
+     * @param string $cidr An IP address (1.2.3.4), CIDR block (1.2.3.4/24),
+     *                     or range "1.2.3.4-1.2.3.10"
+     */
     public function __construct($cidr)
     {
         $this->setCidr($cidr);
@@ -37,10 +54,46 @@ class CIDR
     public function __toString()
     {
         // do not include the prefix if its a single IP
-        if (($this->version == 4 and $this->prefix != 32) || ($this->version == 6 and $this->prefix != 128)) {
-            return $this->ip . '/' . $this->prefix;
+        if (($this->version == 4 and $this->prefix != 32) ||
+            ($this->version == 6 and $this->prefix != 128)) {
+            return $this->start . '/' . $this->prefix;
         }
-        return $this->ip;
+        return $this->start;
+    }
+
+    /**
+     * Set an arbitrary IP range.
+     * The closest matching prefix will be calculated but the actual range
+     * stored in the object can be arbitrary.
+     * @param string $start Starting IP or combination "start-end" string.
+     * @param string $end   Ending IP or null.
+     */
+    public function setRange($ip, $end = null)
+    {
+        if (strpos($ip, '-') !== false) {
+            list($ip, $end) = array_map('trim', explode('-', $ip, 2));
+        }
+
+        if (false === filter_var($ip, FILTER_VALIDATE_IP) ||
+            false === filter_var($end, FILTER_VALIDATE_IP)) {
+            throw new \InvalidArgumentException("Invalid IP range \"$ip-$end\"");
+        }
+
+        // determine version (4 or 6)
+        $this->version = (false === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) ? 6 : 4;
+        $this->start = $ip;
+        $this->end = $end;
+
+        $ip1 = IP::inet_ptod($this->start);
+        $ip2 = IP::inet_ptod($this->end);
+
+        $len = $this->version == 4 ? 32 : 128;
+
+        //echo BC::bcdecbin($ip1, $len), "\n";
+        //echo BC::bcdecbin($ip2, $len), "\n";
+        //echo BC::bcdecbin(BC::bcxor($ip1, $ip2)), "\n";
+
+        $this->prefix = $len - strlen(BC::bcdecbin(BC::bcxor($ip1, $ip2)));
     }
 
     /**
@@ -54,6 +107,10 @@ class CIDR
      */
     public function setCidr($cidr)
     {
+        if (strpos($cidr, '-') !== false) {
+            return $this->setRange($cidr);
+        }
+
         list($ip, $bits) = array_pad(explode('/', $cidr, 2), 2, null);
         if (false === filter_var($ip, FILTER_VALIDATE_IP)) {
             throw new \InvalidArgumentException("Invalid IP address \"$cidr\"");
@@ -62,7 +119,7 @@ class CIDR
         // determine version (4 or 6)
         $this->version = (false === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) ? 6 : 4;
 
-        $this->ip = $ip;
+        $this->start = $ip;
         if ($bits !== null and $bits !== '') {
             $this->prefix = $bits;
         } else {
@@ -89,6 +146,18 @@ class CIDR
     }
 
     /**
+     * Get the prefix.
+     *
+     * Always returns the "proper" prefix, even if the IP range is arbitrary.
+     *
+     * @return integer
+     */
+    public function getPrefix()
+    {
+        return $this->prefix;
+    }
+
+    /**
      * Returns true if the IP is an IPv4
      *
      * @return boolean
@@ -111,11 +180,16 @@ class CIDR
     /**
      * Get the [low,high] range of the CIDR block
      *
-     * @see CIDR::cidr_to_range
+     * Prefix sensitive.
+     *
+     * @param boolean $ignorePrefix If true the arbitrary start-end range is
+     *                              returned. default=false.
      */
-    public function getRange()
+    public function getRange($ignorePrefix = false)
     {
-        return self::cidr_to_range($this->ip, $this->prefix);
+        return $ignorePrefix
+            ? array($this->start, $this->end)
+            : self::cidr_to_range($this->start, $this->prefix);
     }
 
     /**
@@ -127,49 +201,127 @@ class CIDR
      */
     public function getExpanded()
     {
-        return IP::inet_expand($this->ip);
+        return IP::inet_expand($this->start);
     }
 
     /**
      * Get network IP of the CIDR block
      *
-     * @see CIDR::cidr_to_range
+     * Prefix sensitive.
+     *
+     * @param boolean $ignorePrefix If true the arbitrary start-end range is
+     *                              returned. default=false.
      */
-    public function getNetwork()
+    public function getNetwork($ignorePrefix = false)
     {
-        // micro-optimization to prevent calling cidr_to_range repeatedly
-        if (!isset($this->cache['range'])) {
-            $this->cache['range'] = $this->getRange();
+        // micro-optimization to prevent calling getRange repeatedly
+        $k = $ignorePrefix ? 1 : 0;
+        if (!isset($this->cache['range'][$k])) {
+            $this->cache['range'][$k] = $this->getRange($ignorePrefix);
         }
-        return $this->cache['range'][0];
+        return $this->cache['range'][$k][0];
     }
 
     /**
      * Get broadcast IP of the CIDR block
      *
-     * @see CIDR::cidr_to_range
+     * Prefix sensitive.
+     *
+     * @param boolean $ignorePrefix If true the arbitrary start-end range is
+     *                              returned. default=false.
      */
-    public function getBroadcast()
+    public function getBroadcast($ignorePrefix = false)
     {
-        // micro-optimization to prevent calling cidr_to_range repeatedly
-        if (!isset($this->cache['range'])) {
-            $this->cache['range'] = $this->getRange();
+        // micro-optimization to prevent calling getRange repeatedly
+        $k = $ignorePrefix ? 1 : 0;
+        if (!isset($this->cache['range'][$k])) {
+            $this->cache['range'][$k] = $this->getRange($ignorePrefix);
         }
-        return $this->cache['range'][1];
+        return $this->cache['range'][$k][1];
     }
 
     /**
      * Get total hosts within CIDR range
      *
-     * @see CIDR::cidr_to_range
+     * Prefix sensitive.
+     *
+     * @param boolean $ignorePrefix If true the arbitrary start-end range is
+     *                              returned. default=false.
      */
-    public function getTotal()
+    public function getTotal($ignorePrefix = false)
     {
-        // micro-optimization to prevent calling cidr_to_range repeatedly
-        if (!isset($this->cache['range'])) {
-            $this->cache['range'] = $this->getRange();
+        // micro-optimization to prevent calling getRange repeatedly
+        $k = $ignorePrefix ? 1 : 0;
+        if (!isset($this->cache['range'][$k])) {
+            $this->cache['range'][$k] = $this->getRange($ignorePrefix);
         }
-        return bcadd(bcsub(IP::inet_ptod($this->cache['range'][1]), IP::inet_ptod($this->cache['range'][0])), '1');
+        return bcadd(bcsub(IP::inet_ptod($this->cache['range'][$k][1]),
+                           IP::inet_ptod($this->cache['range'][$k][0])), '1');
+    }
+
+    public function intersects($cidr)
+    {
+        return self::cidr_intersect((string)$this, $cidr);
+    }
+
+    /**
+     * Determines the intersection between an IP (with optional prefix) and a
+     * CIDR block.
+     *
+     * The IP will be checked against the CIDR block given and will either be
+     * inside or outside the CIDR completely, or partially.
+     *
+     * NOTE: The caller should explicitly check against the INTERSECT_*
+     * constants because this method will return a value > 1 even for partial
+     * matches.
+     *
+     * @param mixed $ip The IP/cidr to match
+     * @param mixed $cidr The CIDR block to match within
+     * @return integer Returns an INTERSECT_* constant
+     * @throws \InvalidArgumentException if either $ip or $cidr is invalid
+     */
+    public static function cidr_intersect($ip, $cidr)
+    {
+        // use fixed length HEX strings so we can easily do STRING comparisons
+        // instead of using slower bccomp() math.
+        list($lo,$hi)   = array_map(function($v){ return sprintf("%032s", IP::inet_ptoh($v)); }, CIDR::cidr_to_range($ip));
+        list($min,$max) = array_map(function($v){ return sprintf("%032s", IP::inet_ptoh($v)); }, CIDR::cidr_to_range($cidr));
+
+        /** visualization of logic used below
+            lo-hi   = $ip to check
+            min-max = $cidr block being checked against
+            --- --- --- lo  --- --- hi  --- --- --- --- --- IP/prefix to check
+            --- min --- --- max --- --- --- --- --- --- --- Partial "LOW" match
+            --- --- --- --- --- min --- --- max --- --- --- Partial "HIGH" match
+            --- --- --- --- min max --- --- --- --- --- --- No match "NO"
+            --- --- --- --- --- --- --- --- min --- max --- No match "NO"
+            min --- max --- --- --- --- --- --- --- --- --- No match "NO"
+            --- --- min --- --- --- --- max --- --- --- --- Full match "YES"
+         */
+
+        // IP is exact match or completely inside the CIDR block
+        if ($lo >= $min and $hi <= $max) {
+            return self::INTERSECT_YES;
+        }
+
+        // IP is completely outside the CIDR block
+        if ($max < $lo || $min > $hi) {
+            return self::INTERSECT_NO;
+        }
+
+        // @todo is it useful to return LOW/HIGH partial matches?
+
+        // IP matches the lower end
+        if ($max <= $hi and $min <= $lo) {
+            return self::INTERSECT_LOW;
+        }
+
+        // IP matches the higher end
+        if ($min >= $lo and $max >= $hi) {
+            return self::INTERSECT_HIGH;
+        }
+
+        return self::INTERSECT_NO;
     }
 
     /**
@@ -217,10 +369,6 @@ class CIDR
         // calculate "broadcast" (not technically a broadcast in IPv6)
         $ip2 = BC::bcor($ip1, BC::bcnot($netmask));
 
-        // @todo should total be calculated here? It's quick to do since the
-        //       IP addresses are already converted to decimal.
-        //$total = bcadd(bcsub($ip2, $ip1), '1');
-
-        return array(IP::inet_dtop($ip1), IP::inet_dtop($ip2)); //, $total);
+        return array(IP::inet_dtop($ip1), IP::inet_dtop($ip2));
     }
 }
