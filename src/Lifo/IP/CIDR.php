@@ -147,6 +147,20 @@ class CIDR
     }
 
     /**
+     * Get total hosts within CIDR range
+     *
+     * @see CIDR::cidr_to_range
+     */
+    public function getTotal()
+    {
+        // micro-optimization to prevent calling cidr_to_range repeatedly
+        if (!isset($this->cache['range'])) {
+            $this->cache['range'] = $this->getRange();
+        }
+        return bcadd(bcsub(IP::inet_ptod($this->cache['range'][1]), IP::inet_ptod($this->cache['range'][0])), '1');
+    }
+
+    /**
      * Converts an IPv4 or IPv6 CIDR block into its range.
      *
      * @todo May not be the fastest way to do this.
