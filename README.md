@@ -7,11 +7,15 @@ __This library is a work-in-progress (WIP).__
 ### Notes
 
 This library is not complete and is missing certain CIDR, Subnet and other miscellaneous IP features. 
+Most of the IP conversion routines use `BCMATH` to do calculations which means this library is not the fastest it
+could be. Once the library is in a more stable state I may start attempting to optimize certain bits.
+
 Feel free to send pull requests with missing functionality.
 
 ### Examples
 
 The translation routines are IP agnostic, meaning they don't care if you pass in an IPv4 or IPv6 address.
+All IP calculations are done in `Decimal` which is perfect for storing in databases. 
 
 ```php
 use Lifo\IP\IP;
@@ -39,11 +43,11 @@ echo "$ip\n", implode(' - ', $ip->getRange()), " (" . number_format($ip->getTota
 // expected output:
 127.0.0.1 = 2130706433
 127.0.0.1 = 2130706433
-127.0.0.1 = 7f000001
+127.0.0.1 = 7f000001 (hex)
 
 2001:4056::1 = 42541793049812452694190522094162280449
 2001:4056::1 = 42541793049812452694190522094162280449
-2001:4056::1 = 20014056000000000000000000000001
+2001:4056::1 = 20014056000000000000000000000001 (hex)
 
 2001:4056::1/96
 2001:4056:: - 2001:4056::ffff:ffff (4,294,967,296 hosts)
