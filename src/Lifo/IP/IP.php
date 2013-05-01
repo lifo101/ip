@@ -105,6 +105,14 @@ abstract class IP
     }
 
     /**
+     * Convert a binary string into an IP address (presentational) string.
+     */
+    public static function inet_btop($bin)
+    {
+        return self::inet_dtop(BC::bcbindec($bin));
+    }
+
+    /**
      * Convert a HEX string into a human readable (presentational) IP address
      */
     public static function inet_htop($hex)
