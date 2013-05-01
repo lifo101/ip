@@ -36,7 +36,11 @@ class CIDR
      */
     public function __toString()
     {
-        return $this->ip . '/' . $this->prefix;
+        // do not include the prefix if its a single IP
+        if (($this->version == 4 and $this->prefix != 32) || ($this->version == 6 and $this->prefix != 128)) {
+            return $this->ip . '/' . $this->prefix;
+        }
+        return $this->ip;
     }
 
     /**
@@ -59,8 +63,16 @@ class CIDR
         $this->version = (false === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) ? 6 : 4;
 
         $this->ip = $ip;
-        if ($bits !== null) {
+        if ($bits !== null and $bits !== '') {
             $this->prefix = $bits;
+        } else {
+            $this->prefix = $this->version == 4 ? 32 : 128;
+        }
+
+        if (($this->prefix < 0)
+            || ($this->prefix > 32 and $this->version == 4)
+            || ($this->prefix > 128 and $this->version == 6)) {
+            throw new \InvalidArgumentException("Invalid IP address \"$cidr\"");
         }
 
         $this->cache = array();
