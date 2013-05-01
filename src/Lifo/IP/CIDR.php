@@ -97,6 +97,14 @@ class CIDR
     }
 
     /**
+     * Returns true if the current IP is a true cidr block
+     */
+    public function isTrueCidr()
+    {
+        return $this->start == $this->getNetwork();
+    }
+
+    /**
      * Set the CIDR block.
      *
      * The prefix length is optional and will default to 32 ot 128 depending on
@@ -370,5 +378,11 @@ class CIDR
         $ip2 = BC::bcor($ip1, BC::bcnot($netmask));
 
         return array(IP::inet_dtop($ip1), IP::inet_dtop($ip2));
+    }
+
+    public static function cidr_is_true($ip)
+    {
+        $ip = new CIDR($ip);
+        return $ip->isTrueCidr();
     }
 }
