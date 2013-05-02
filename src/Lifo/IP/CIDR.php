@@ -368,8 +368,6 @@ class CIDR
         }
 
         // force bit length to 32 or 128 depending on type of IP
-        // @todo not sure this should be used; It's possible to use strlen($ipbin)
-        //       to determine approximate bit length required.
         $bitlen = (false === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) ? 128 : 32;
 
         if ($bits === null) {
@@ -384,7 +382,6 @@ class CIDR
 
         $ipdec = IP::inet_ptod($ip);
         $ipbin = BC::bcdecbin($ipdec, $bitlen);
-        //$bitlen = strlen($ipbin);
 
         // calculate network
         $netmask = BC::bcbindec(str_pad(str_repeat('1',$bits), $bitlen, '0'));
