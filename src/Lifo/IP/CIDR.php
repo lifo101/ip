@@ -42,10 +42,15 @@ class CIDR
      *
      * @param string $cidr An IP address (1.2.3.4), CIDR block (1.2.3.4/24),
      *                     or range "1.2.3.4-1.2.3.10"
+     * @param string $end Ending IP in range if no cidr/prefix is given
      */
-    public function __construct($cidr)
+    public function __construct($cidr, $end = null)
     {
-        $this->setCidr($cidr);
+        if ($end !== null) {
+            $this->setRange($cidr, $end);
+        } else {
+            $this->setCidr($cidr);
+        }
     }
 
     /**
@@ -54,11 +59,17 @@ class CIDR
     public function __toString()
     {
         // do not include the prefix if its a single IP
-        if (($this->version == 4 and $this->prefix != 32) ||
-            ($this->version == 6 and $this->prefix != 128)) {
+        if ($this->isTrueCidr() && (
+            ($this->version == 4 and $this->prefix != 32) ||
+            ($this->version == 6 and $this->prefix != 128)
+            )
+        ) {
             return $this->start . '/' . $this->prefix;
         }
-        return $this->start;
+        if (strcmp($this->start, $this->end) == 0) {
+            return $this->start;
+        }
+        return $this->start . ' - ' . $this->end;
     }
 
     /**
@@ -360,15 +371,20 @@ class CIDR
         // @todo not sure this should be used; It's possible to use strlen($ipbin)
         //       to determine approximate bit length required.
         $bitlen = (false === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) ? 128 : 32;
-        $ipdec = IP::inet_ptod($ip);
-        $ipbin = BC::bcdecbin($ipdec, $bitlen);
-        //$bitlen = strlen($ipbin);
 
         if ($bits === null) {
             // if no prefix is given use the length of the binary string which
             // will give us 32 or 128 and result in a single IP being returned.
             $bits = $_bits !== null ? $_bits : $bitlen;
         }
+
+        if ($bits > $bitlen) {
+            throw new \InvalidArgumentException("IP address \"$cidr\" is invalid");
+        }
+
+        $ipdec = IP::inet_ptod($ip);
+        $ipbin = BC::bcdecbin($ipdec, $bitlen);
+        //$bitlen = strlen($ipbin);
 
         // calculate network
         $netmask = BC::bcbindec(str_pad(str_repeat('1',$bits), $bitlen, '0'));
@@ -378,6 +394,12 @@ class CIDR
         $ip2 = BC::bcor($ip1, BC::bcnot($netmask));
 
         return array(IP::inet_dtop($ip1), IP::inet_dtop($ip2));
+    }
+
+    public static function range_to_cidr($start, $end)
+    {
+        $cidr = new CIDR($start, $end);
+        return (string)$cidr;
     }
 
     public static function cidr_is_true($ip)
