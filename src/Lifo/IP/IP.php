@@ -38,9 +38,7 @@ abstract class IP
         $parts = unpack('N*', inet_pton($ip));
         foreach ($parts as &$part) {
             if ($part < 0) {
-                // since PHP stores ints as unsigned we need to convert negative
-                // numbers into their positive value in order for the BC math
-                // below to perform calculations.
+                // convert signed int into unsigned
                 $part = sprintf('%u', $part);
                 //$part = bcadd($part, '4294967296');
             }
