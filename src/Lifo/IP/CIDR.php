@@ -112,7 +112,7 @@ class CIDR
      */
     public function isTrueCidr()
     {
-        return $this->start == $this->getNetwork();
+        return $this->start == $this->getNetwork() && $this->end == $this->getBroadcast();
     }
 
     /**
