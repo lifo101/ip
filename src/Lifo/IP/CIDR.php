@@ -151,6 +151,8 @@ class CIDR
             throw new \InvalidArgumentException("Invalid IP address \"$cidr\"");
         }
 
+        $this->end = $this->getBroadcast();
+
         $this->cache = array();
     }
 
@@ -403,15 +405,19 @@ class CIDR
     }
 
     /**
-     * Return the Prefix bits from the mask given.
+     * Return the Prefix bits from the IPv4 mask given.
      *
-     * No error checking is done on the $mask to make sure its valid.
+     * This is only valid for IPv4 addresses since IPv6 addressing does not
+     * have a concept of network masks.
      *
      * Example: 255.255.255.0 == 24
      */
     public static function mask_to_prefix($mask)
     {
-        return strlen(str_replace('0', '', IP::inet_ptob($mask)));
+        if (false === filter_var($mask, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            throw new \InvalidArgumentException("Invalid IP netmask \"$mask\"");
+        }
+        return strrpos(IP::inet_ptob($mask, 32), '1') + 1;
     }
 
     /**

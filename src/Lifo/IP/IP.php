@@ -97,9 +97,9 @@ abstract class IP
     /**
      * Convert a human readable (presentational) IP address into a BINARY string.
      */
-    public static function inet_ptob($ip)
+    public static function inet_ptob($ip, $bits = 128)
     {
-        return BC::bcdecbin(self::inet_ptod($ip), 128);
+        return BC::bcdecbin(self::inet_ptod($ip), $bits);
     }
 
     /**
