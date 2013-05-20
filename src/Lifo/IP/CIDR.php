@@ -393,12 +393,33 @@ class CIDR
         return array(IP::inet_dtop($ip1), IP::inet_dtop($ip2));
     }
 
+    /**
+     * Return the CIDR string from the range given
+     */
     public static function range_to_cidr($start, $end)
     {
         $cidr = new CIDR($start, $end);
         return (string)$cidr;
     }
 
+    /**
+     * Return the Prefix bits from the mask given.
+     *
+     * No error checking is done on the $mask to make sure its valid.
+     *
+     * Example: 255.255.255.0 == 24
+     */
+    public static function mask_to_prefix($mask)
+    {
+        return strlen(str_replace('0', '', IP::inet_ptob($mask)));
+    }
+
+    /**
+     * Return true if the $ip given is a true CIDR block.
+     *
+     * A true CIDR block is one where the $ip given is the actual Network
+     * address and broadcast matches the prefix appropriately.
+     */
     public static function cidr_is_true($ip)
     {
         $ip = new CIDR($ip);
