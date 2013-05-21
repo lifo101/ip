@@ -140,4 +140,33 @@ abstract class IP
         }
         return $ip;
     }
+
+    /**
+     * Returns true if the IP address is a valid IPv4 address
+     */
+    public static function isIPv4($ip)
+    {
+        return $ip === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+    }
+
+    /**
+     * Returns true if the IP address is a valid IPv6 address
+     */
+    public static function isIPv6($ip)
+    {
+        return $ip === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
+    }
+
+    /**
+     * Compare two IP's (v4 or v6) and return -1, 0, 1 if the first is < = >
+     * the second.
+     *
+     * @param string $ip1 IP address
+     * @param string $ip2 IP address to compare against
+     * @return integer Return -1,0,1 depending if $ip1 is <=> $ip2
+     */
+    public static function cmp($ip1, $ip2)
+    {
+        return bccomp(self::inet_ptod($ip1), self::inet_ptod($ip2), 0);
+    }
 }
