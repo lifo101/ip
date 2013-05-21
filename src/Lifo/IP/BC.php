@@ -196,6 +196,63 @@ abstract class BC
     }
 
     /**
+     * Computes the natural logarithm using a series.
+     * @author Thomas Oldbury.
+     * @license Public domain.
+     */
+    public static function bclog($num, $iter = 10, $scale = 100)
+    {
+        $log = "0.0";
+        for($i = 0; $i < $iter; $i++) {
+            $pow = 1 + (2 * $i);
+            $mul = bcdiv("1.0", $pow, $scale);
+            $fraction = bcmul($mul, bcpow(bcsub($num, "1.0", $scale) / bcadd($num, "1.0", $scale), $pow, $scale), $scale);
+            $log = bcadd($fraction, $log, $scale);
+        }
+        return bcmul("2.0", $log, $scale);
+    }
+
+    /**
+     * Computes the base2 log using baseN log.
+     */
+    public static function bclog2($num, $iter = 10, $scale = 100)
+    {
+        return bcdiv(self::bclog($num, $iter, $scale), self::bclog("2", $iter, $scale), $scale);
+    }
+
+    public static function bcfloor($num)
+    {
+        if (substr($num, 0, 1) == '-') {
+            return bcsub($num, 1, 0);
+        }
+        return bcadd($num, 0, 0);
+    }
+
+    public static function bcceil($num)
+    {
+        if (substr($num, 0, 1) == '-') {
+            return bcsub($num, 0, 0);
+        }
+        return bcadd($num, 1, 0);
+    }
+
+    /**
+     * Compare two numbers and return -1, 0, 1 depending if the LEFT number is
+     * < = > the RIGHT.
+     *
+     * @param string|integer $left Left side operand
+     * @param string|integer $right Right side operand
+     * @return integer Return -1,0,1 for <=> comparison
+     */
+    public static function cmp($left, $right)
+    {
+        // @todo could an optimization be done to determine if a normal 32bit
+        //       comparison could be done instead of using bccomp? But would
+        //       the number verification cause too much overhead to be useful?
+        return bccomp($left, $right, 0);
+    }
+
+    /**
      * Internal function to prepare for bitwise operations
      */
     private static function _bitwise(&$left, &$right, $bits = null)
