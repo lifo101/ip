@@ -340,7 +340,7 @@ class CIDR
         }
 
         // IP is completely outside the CIDR block
-        if ($max < $lo || $min > $hi) {
+        if ($max < $lo or $min > $hi) {
             return self::INTERSECT_NO;
         }
 
@@ -416,6 +416,100 @@ class CIDR
     {
         $cidr = new CIDR($start, $end);
         return (string)$cidr;
+    }
+
+    /**
+     * Return the maximum prefix length that would fit the IP address given.
+     *
+     * This is useful to determine how my bit would be needed to store the IP
+     * address when you don't already have a prefix for the IP.
+     *
+     * @example 216.240.32.0 would return 27
+     *
+     * @param string $ip IP address without prefix
+     * @param integer $bits Maximum bits to check; defaults to 32 for IPv4 and 128 for IPv6
+     */
+    public static function max_prefix($ip, $bits = null)
+    {
+        static $mask = array();
+
+        $ver = (false === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) ? 6 : 4;
+        $max = $ver == 6 ? 128 : 32;
+        if ($bits === null) {
+            $bits = $max;
+
+        }
+
+        $int = IP::inet_ptod($ip);
+        while ($bits > 0) {
+            // micro-optimization; calculate mask once ...
+            if (!isset($mask[$ver][$bits-1])) {
+                // 2^$max - 2^($max - $bits);
+                if ($ver == 4) {
+                    $mask[$ver][$bits-1] = pow(2, $max) - pow(2, $max - ($bits-1));
+                } else {
+                    $mask[$ver][$bits-1] = bcsub(bcpow(2, $max), bcpow(2, $max - ($bits-1)));
+                }
+            }
+
+            $m = $mask[$ver][$bits-1];
+            //printf("%s/%d: %s & %s == %s\n", $ip, $bits-1, BC::bcdecbin($m, 32), BC::bcdecbin($int, 32), BC::bcdecbin(BC::bcand($int, $m)));
+            //echo "$ip/", $bits-1, ": ", IP::inet_dtop($m), " ($m) & $int == ", BC::bcand($int, $m), "\n";
+            if (bccomp(BC::bcand($int, $m), $int) != 0) {
+                return $bits;
+            }
+            $bits--;
+        }
+        return $bits;
+    }
+
+    /**
+     * Return a contiguous list of true CIDR blocks that span the range given.
+     *
+     * Note: It's not a good idea to call this with IPv6 addresses. While it may
+     * work for certain ranges this can be very slow. Also an IPv6 list won't be
+     * as accurate as an IPv4 list.
+     *
+     * @example
+     *  range_to_cidrlist(192.168.0.0, 192.168.0.15) ==
+     *    192.168.0.0/28
+     *  range_to_cidrlist(192.168.0.0, 192.168.0.20) ==
+     *    192.168.0.0/28
+     *    192.168.0.16/30
+     *    192.168.0.20/32
+     */
+    public static function range_to_cidrlist($start, $end)
+    {
+        $ver   = (false === filter_var($start, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) ? 6 : 4;
+        $start = IP::inet_ptod($start);
+        $end   = IP::inet_ptod($end);
+
+        $len = $ver == 4 ? 32 : 128;
+        $log2 = $ver == 4 ? log(2) : BC::bclog(2);
+
+        $list = array();
+        while (BC::cmp($end, $start) >= 0) { // $end >= $start
+            $prefix = self::max_prefix(IP::inet_dtop($start), $len);
+            if ($ver == 4) {
+                $diff = $len - floor( log($end - $start + 1) / $log2 );
+            } else {
+                // this is not as accurate due to the bclog function
+                $diff = bcsub($len, BC::bcfloor(bcdiv(BC::bclog(bcadd(bcsub($end, $start), '1')), $log2)));
+            }
+
+            if ($prefix < $diff) {
+                $prefix = $diff;
+            }
+
+            $list[] = IP::inet_dtop($start) . "/" . $prefix;
+
+            if ($ver == 4) {
+                $start += pow(2, $len - $prefix);
+            } else {
+                $start = bcadd($start, bcpow(2, $len - $prefix));
+            }
+        }
+        return $list;
     }
 
     /**
