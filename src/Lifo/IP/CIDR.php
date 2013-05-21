@@ -199,6 +199,20 @@ class CIDR
     }
 
     /**
+     * Get the cidr notation for the subnet block.
+     *
+     * This is useful for when you want a string representation of the IP/prefix
+     * and the starting IP is not on a valid network boundrary (eg: Displaying
+     * an IP from an interface).
+     *
+     * @return string IP in CIDR notation "ipaddr/prefix"
+     */
+    public function getCidr()
+    {
+        return $this->start . '/' . $this->prefix;
+    }
+
+    /**
      * Get the [low,high] range of the CIDR block
      *
      * Prefix sensitive.
