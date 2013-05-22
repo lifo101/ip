@@ -29,6 +29,8 @@ class CIDR
     protected $end;
     protected $prefix;
     protected $version;
+    protected $istart;
+    protected $iend;
 
     private $cache;
 
@@ -95,16 +97,12 @@ class CIDR
         $this->start = $ip;
         $this->end = $end;
 
-        $ip1 = IP::inet_ptod($this->start);
-        $ip2 = IP::inet_ptod($this->end);
+        $this->istart = IP::inet_ptod($this->start);
+        $this->iend   = IP::inet_ptod($this->end);
 
         $len = $this->version == 4 ? 32 : 128;
 
-        //echo BC::bcdecbin($ip1, $len), "\n";
-        //echo BC::bcdecbin($ip2, $len), "\n";
-        //echo BC::bcdecbin(BC::bcxor($ip1, $ip2)), "\n";
-
-        $this->prefix = $len - strlen(BC::bcdecbin(BC::bcxor($ip1, $ip2)));
+        $this->prefix = $len - strlen(BC::bcdecbin(BC::bcxor($this->istart, $this->iend)));
     }
 
     /**
@@ -139,6 +137,8 @@ class CIDR
         $this->version = (false === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) ? 6 : 4;
 
         $this->start = $ip;
+        $this->istart = IP::inet_ptod($ip);
+
         if ($bits !== null and $bits !== '') {
             $this->prefix = $bits;
         } else {
@@ -152,6 +152,7 @@ class CIDR
         }
 
         $this->end = $this->getBroadcast();
+        $this->iend = IP::inet_ptod($this->end);
 
         $this->cache = array();
     }
@@ -176,6 +177,36 @@ class CIDR
     public function getPrefix()
     {
         return $this->prefix;
+    }
+
+    /**
+     * Return the starting presentational IP or Decimal value.
+     *
+     * Ignores prefix
+     */
+    public function getStart($decimal = false)
+    {
+        return $decimal ? $this->istart : $this->start;
+    }
+
+    /**
+     * Return the ending presentational IP or Decimal value.
+     *
+     * Ignores prefix
+     */
+    public function getEnd($decimal = false)
+    {
+        return $decimal ? $this->iend : $this->end;
+    }
+
+    /**
+     * Return the next presentational IP or Decimal value (following the
+     * broadcast address of the current CIDR block).
+     */
+    public function getNext($decimal = false)
+    {
+        $next = bcadd($this->getEnd(true), '1');
+        return $decimal ? $next : new self(IP::inet_dtop($next));
     }
 
     /**
@@ -510,6 +541,75 @@ class CIDR
             }
         }
         return $list;
+    }
+
+    /**
+     * Return an list of optimized CIDR blocks by collapsing adjacent CIDR
+     * blocks into larger blocks.
+     *
+     * @param array $cidrs List of CIDR block strings or objects
+     * @param integer $maxPrefix Maximum prefix to allow
+     * @return array Optimized list of CIDR objects
+     */
+    public static function optimize_cidrlist($cidrs, $maxPrefix = 32)
+    {
+        // all indexes must be a CIDR object
+        $cidrs = array_map(function($o){ return $o instanceof CIDR ? $o : new CIDR($o); }, $cidrs);
+        // sort CIDR blocks in proper order so we can easily loop over them
+        $cidrs = self::cidr_sort($cidrs);
+
+        $list = array();
+        while ($cidrs) {
+            $c = array_shift($cidrs);
+            $start = $c->getStart();
+
+            $max = bcadd($c->getStart(true), $c->getTotal());
+
+            // loop through each cidr block until its ending range is more than
+            // the current maximum.
+            while (!empty($cidrs) and $cidrs[0]->getStart(true) <= $max) {
+                $b = array_shift($cidrs);
+                $newmax = bcadd($b->getStart(true), $b->getTotal());
+                if ($newmax > $max) {
+                    $max = $newmax;
+                }
+            }
+
+            // add the new cidr range to the optimized list
+            $list = array_merge($list, self::range_to_cidrlist($start, IP::inet_dtop(bcsub($max, '1'))));
+        }
+
+        return $list;
+    }
+
+    /**
+     * Sort the list of CIDR blocks, optionally with a custom callback function.
+     *
+     * @param array $cidrs A list of CIDR blocks (strings or objects)
+     * @param Closure $callback Optional callback to perform the sorting.
+     *                          See PHP usort documentation for more details.
+     */
+    public static function cidr_sort($cidrs, $callback = null)
+    {
+        // all indexes must be a CIDR object
+        $cidrs = array_map(function($o){ return $o instanceof CIDR ? $o : new CIDR($o); }, $cidrs);
+
+        if ($callback === null) {
+            $callback = function($a, $b) {
+                if (0 != ($o = BC::cmp($a->getStart(true), $b->getStart(true)))) {
+                    return $o;  // < or >
+                }
+                if ($a->getPrefix() == $b->getPrefix()) {
+                    return 0;
+                }
+                return $a->getPrefix() < $b->getPrefix() ? -1 : 1;
+            };
+        } elseif (!($callback instanceof \Closure) or !is_callable($callback)) {
+            throw new \InvalidArgumentException("Invalid callback in CIDR::cidr_sort, expected Closure, got " . gettype($callback));
+        }
+
+        usort($cidrs, $callback);
+        return $cidrs;
     }
 
     /**
