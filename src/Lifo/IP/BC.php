@@ -150,6 +150,24 @@ abstract class BC
     }
 
     /**
+     * Shift number to the left
+     *
+     * @param integer $bits Total bits to shift
+     */
+    public static function bcleft($num, $bits) {
+        return bcmul($num, bcpow('2', $bits));
+    }
+
+    /**
+     * Shift number to the right
+     *
+     * @param integer $bits Total bits to shift
+     */
+    public static function bcright($num, $bits) {
+        return bcdiv($num, bcpow('2', $bits));
+    }
+
+    /**
      * Determine how many bits are needed to store the number rounded to the
      * nearest bit boundary.
      */
