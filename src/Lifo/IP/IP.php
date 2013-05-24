@@ -142,6 +142,31 @@ abstract class IP
     }
 
     /**
+     * Convert an IPv4 address into an IPv6 address.
+     *
+     * One use-case for this is IP 6to4 tunnels used in networking.
+     *
+     * @example
+     *      to_ipv4("10.10.10.10") == a0a:a0a
+     *
+     * @param string $ip IPv4 address.
+     * @param boolean $mapped If true a Full IPv6 address is returned within the
+     *                        official ipv4to6 mapped space "0:0:0:0:0:ffff:x:x"
+     */
+    public static function to_ipv6($ip, $mapped = false)
+    {
+        if (!self::isIPv4($ip)) {
+            throw new \InvalidArgumentException("Invalid IPv4 address \"$ip\"");
+        }
+
+        $num = IP::inet_ptod($ip);
+        $o1 = dechex($num >> 16);
+        $o2 = dechex($num & 0x0000FFFF);
+
+        return $mapped ? "0:0:0:0:0:ffff:$o1:$o2" : "$o1:$o2";
+    }
+
+    /**
      * Returns true if the IP address is a valid IPv4 address
      */
     public static function isIPv4($ip)
