@@ -74,6 +74,13 @@ class CIDR
         return $this->start . ' - ' . $this->end;
     }
 
+    public function __clone()
+    {
+        // do not clone the cache. No real reason why. I just want to keep the
+        // memory foot print as low as possible, even though this is trivial.
+        $this->cache = array();
+    }
+
     /**
      * Set an arbitrary IP range.
      * The closest matching prefix will be calculated but the actual range
@@ -304,6 +311,15 @@ class CIDR
             $this->cache['range'][$k] = $this->getRange($ignorePrefix);
         }
         return $this->cache['range'][$k][1];
+    }
+
+    /**
+     * Get the network mask based on the prefix.
+     *
+     */
+    public function getMask()
+    {
+        return self::prefix_to_mask($this->prefix, $this->version);
     }
 
     /**
@@ -619,6 +635,8 @@ class CIDR
      * have a concept of network masks.
      *
      * Example: 255.255.255.0 == 24
+     *
+     * @param string $mask IPv4 network mask.
      */
     public static function mask_to_prefix($mask)
     {
@@ -626,6 +644,36 @@ class CIDR
             throw new \InvalidArgumentException("Invalid IP netmask \"$mask\"");
         }
         return strrpos(IP::inet_ptob($mask, 32), '1') + 1;
+    }
+
+    /**
+     * Return the network mask for the prefix given.
+     *
+     * Normally this is only useful for IPv4 addresses but you can generate a
+     * mask for IPv6 addresses as well, only because its mathematically
+     * possible.
+     *
+     * @param integer $prefix CIDR prefix bits (0-128)
+     * @param integer $version IP version. If null the version will be detected
+     *                         based on the prefix length given.
+     */
+    public static function prefix_to_mask($prefix, $version = null)
+    {
+        if ($version === null) {
+            $version = $prefix > 32 ? 6 : 4;
+        }
+        if ($prefix < 0 or $prefix > 128) {
+            throw new \InvalidArgumentException("Invalid prefix length \"$prefix\"");
+        }
+        if ($version != 4 and $version != 6) {
+            throw new \InvalidArgumentException("Invalid version \"$version\". Must be 4 or 6");
+        }
+
+        if ($version == 4) {
+            return long2ip($prefix == 0 ? 0 : (0xFFFFFFFF >> (32 - $prefix)) << (32 - $prefix));
+        } else {
+            return IP::inet_dtop($prefix == 0 ? 0 : BC::bcleft(BC::bcright(BC::MAX_UINT_128, 128-$prefix), 128-$prefix));
+        }
     }
 
     /**
