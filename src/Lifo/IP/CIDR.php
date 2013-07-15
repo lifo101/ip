@@ -61,12 +61,16 @@ class CIDR
     public function __toString()
     {
         // do not include the prefix if its a single IP
-        if ($this->isTrueCidr() && (
-            ($this->version == 4 and $this->prefix != 32) ||
-            ($this->version == 6 and $this->prefix != 128)
-            )
-        ) {
-            return $this->start . '/' . $this->prefix;
+        try {
+            if ($this->isTrueCidr() && (
+                ($this->version == 4 and $this->prefix != 32) ||
+                ($this->version == 6 and $this->prefix != 128)
+                )
+            ) {
+                return $this->start . '/' . $this->prefix;
+            }
+        } catch (\Exception $e) {
+            // isTrueCidr() calls getRange which can throw an exception
         }
         if (strcmp($this->start, $this->end) == 0) {
             return $this->start;
@@ -101,14 +105,21 @@ class CIDR
 
         // determine version (4 or 6)
         $this->version = (false === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) ? 6 : 4;
+
+        $this->istart = IP::inet_ptod($ip);
+        $this->iend   = IP::inet_ptod($end);
+
+        // fix order
+        if (bccomp($this->istart, $this->iend) == 1) {
+            list($this->istart, $this->iend) = array($this->iend, $this->istart);
+            list($ip, $end) = array($end, $ip);
+        }
+
         $this->start = $ip;
         $this->end = $end;
 
-        $this->istart = IP::inet_ptod($this->start);
-        $this->iend   = IP::inet_ptod($this->end);
-
+        // calculate real prefix
         $len = $this->version == 4 ? 32 : 128;
-
         $this->prefix = $len - strlen(BC::bcdecbin(BC::bcxor($this->istart, $this->iend)));
     }
 
@@ -260,9 +271,14 @@ class CIDR
      */
     public function getRange($ignorePrefix = false)
     {
-        return $ignorePrefix
+        $range = $ignorePrefix
             ? array($this->start, $this->end)
             : self::cidr_to_range($this->start, $this->prefix);
+        // watch out for IP '0' being converted to IPv6 '::'
+        if ($range[0] == '::' and strpos($range[1], ':') == false) {
+            $range[0] = '0.0.0.0';
+        }
+        return $range;
     }
 
     /**
