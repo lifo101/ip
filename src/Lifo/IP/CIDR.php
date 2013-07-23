@@ -146,7 +146,7 @@ class CIDR
             return $this->setRange($cidr);
         }
 
-        list($ip, $bits) = array_pad(explode('/', $cidr, 2), 2, null);
+        list($ip, $bits) = array_pad(array_map('trim', explode('/', $cidr, 2)), 2, null);
         if (false === filter_var($ip, FILTER_VALIDATE_IP)) {
             throw new \InvalidArgumentException("Invalid IP address \"$cidr\"");
         }
