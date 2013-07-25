@@ -74,8 +74,18 @@ abstract class IP
             $part = (int) $part;
         }
 
-        $packed = pack('N4', $parts[1], $parts[2], $parts[3], $parts[4]);
-        $ip = inet_ntop($packed);
+        // if the first 96bits is all zeros then we can safely assume we
+        // actually have an IPv4 address. Even though it's technically possible
+        // you're not really ever going to see an IPv6 address in the range:
+        // ::0 - ::ffff
+        // It's feasible to see an IPv6 address of "::", in which case the
+        // caller is going to have to account for that on their own.
+        if (($parts[1] | $parts[2] | $parts[3]) == 0) {
+            $ip = long2ip($parts[4]);
+        } else {
+            $packed = pack('N4', $parts[1], $parts[2], $parts[3], $parts[4]);
+            $ip = inet_ntop($packed);
+        }
 
         // Turn IPv6 to IPv4 if it's IPv4
         if (preg_match('/^::\d+\./', $ip)) {
