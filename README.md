@@ -2,8 +2,6 @@
 
 IP address helper PHP library for working with IPv4 and IPv6 addresses. Convert any IP address into decimal, hex or binary and back again.
 
-__This library is a work-in-progress (WIP).__ 
-
 ### Notes
 
 This library is not complete and is missing certain CIDR, Subnet and other miscellaneous IP features. 
