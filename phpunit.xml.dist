@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="../../autoload.php"
+	 colors="true"
+>
+    <php>
+        <ini name="intl.default_locale" value="en"/>
+    </php>
+
+    <testsuites>
+        <testsuite name="Lifo\IP Test Suite">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+
+    <filter>
+        <whitelist>
+            <directory suffix=".php">./src</directory>
+            <exclude>
+            </exclude>
+        </whitelist>
+    </filter>
+</phpunit>
