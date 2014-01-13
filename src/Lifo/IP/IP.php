@@ -26,6 +26,10 @@ abstract class IP
     {
         // shortcut for IPv4 addresses
         if (strpos($ip, ':') === false && strpos($ip, '.') !== false) {
+            // remove any cidr block notation
+            if (($o = strpos($ip, '/')) !== false) {
+                $ip = substr($ip, 0, $o);
+            }
             return sprintf('%u', ip2long($ip));
         }
 
@@ -117,8 +121,11 @@ abstract class IP
     /**
      * Convert a human readable (presentational) IP address into a BINARY string.
      */
-    public static function inet_ptob($ip, $bits = 128)
+    public static function inet_ptob($ip, $bits = null)
     {
+        if ($bits === null) {
+            $bits = self::isIPv4($ip) ? 32 : 128;
+        }
         return BC::bcdecbin(self::inet_ptod($ip), $bits);
     }
 
