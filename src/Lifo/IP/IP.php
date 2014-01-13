@@ -101,11 +101,6 @@ abstract class IP
             $ip = inet_ntop($packed);
         }
 
-        // Turn IPv6 to IPv4 if it's IPv4
-        if ($version != 6 and preg_match('/^::\d+\./', $ip)) {
-            return substr($ip, 2);
-        }
-
         return $ip;
     }
 
@@ -174,7 +169,7 @@ abstract class IP
      * One use-case for this is IP 6to4 tunnels used in networking.
      *
      * @example
-     *      to_ipv4("10.10.10.10") == a0a:a0a
+     *      to_ipv6("10.10.10.10") == a0a:a0a
      *
      * @param string $ip IPv4 address.
      * @param boolean $mapped If true a Full IPv6 address is returned within the
