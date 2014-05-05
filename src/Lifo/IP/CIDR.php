@@ -254,11 +254,29 @@ class CIDR
      * and the starting IP is not on a valid network boundrary (eg: Displaying
      * an IP from an interface).
      *
-     * @return string IP in CIDR notation "ipaddr/prefix"
+     * <b>Note: The CIDR block returned is NOT always bit aligned.</b>
+     *
+     * @return string IP in CIDR notation "start_ip/prefix"
      */
     public function getCidr()
     {
         return $this->start . '/' . $this->prefix;
+    }
+
+    /**
+     * Get the TRUE cidr notation for the subnet block.
+     *
+     * This is useful for when you want a string representation of the IP/prefix
+     * and the starting IP is not on a valid network boundrary (eg: Displaying
+     * an IP from an interface).
+     *
+     * <b>Note: The CIDR block returned is ALWAYS bit aligned.</b>
+     *
+     * @return string IP in CIDR notation "network/prefix"
+     */
+    public function getTrueCidr()
+    {
+        return $this->getNetwork() . '/' . $this->prefix;
     }
 
     /**
