@@ -15,6 +15,6 @@
         "ext-bcmath": "*"
     },
     "autoload": {
-        "psr-0": { "Lifo\\IP\\": "src/" }
+        "psr-4": { "Lifo\\IP\\": "src/" }
     }
 }

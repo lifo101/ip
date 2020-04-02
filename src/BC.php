@@ -7,6 +7,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace Lifo\IP;
 
 /**
@@ -36,6 +37,9 @@ abstract class BC
 
     /**
      * BC Math function to convert a HEX string into a DECIMAL
+     *
+     * @param string $hex
+     * @return float|int|string
      */
     public static function bchexdec($hex)
     {
@@ -50,6 +54,10 @@ abstract class BC
 
     /**
      * BC Math function to convert a DECIMAL string into a BINARY string
+     *
+     * @param string $dec
+     * @param int    $pad
+     * @return string
      */
     public static function bcdecbin($dec, $pad = null)
     {
@@ -64,11 +72,14 @@ abstract class BC
 
     /**
      * BC Math function to convert a BINARY string into a DECIMAL string
+     *
+     * @param string $bin
+     * @return string
      */
     public static function bcbindec($bin)
     {
         $dec = '0';
-        for ($i=0, $j=strlen($bin); $i<$j; $i++) {
+        for ($i = 0, $j = strlen($bin); $i < $j; $i++) {
             $dec = bcmul($dec, '2', 0);
             $dec = bcadd($dec, $bin[$i], 0);
         }
@@ -77,14 +88,20 @@ abstract class BC
 
     /**
      * BC Math function to convert a BINARY string into a HEX string
+     *
+     * @param string $bin
+     * @return string
      */
-    public static function bcbinhex($bin, $pad = 0)
+    public static function bcbinhex($bin)
     {
         return self::bcdechex(self::bcbindec($bin));
     }
 
     /**
      * BC Math function to convert a DECIMAL into a HEX string
+     *
+     * @param string $dec
+     * @return string
      */
     public static function bcdechex($dec)
     {
@@ -95,56 +112,72 @@ abstract class BC
 
     /**
      * Bitwise AND two arbitrarily large numbers together.
+     *
+     * @param string $left
+     * @param string $right
+     * @return string
      */
     public static function bcand($left, $right)
     {
         $len = self::_bitwise($left, $right);
 
         $value = '';
-        for ($i=0; $i<$len; $i++) {
-            $value .= (($left{$i} + 0) & ($right{$i} + 0)) ? '1' : '0';
+        for ($i = 0; $i < $len; $i++) {
+            $value .= (($left[$i] + 0) & ($right[$i] + 0)) ? '1' : '0';
         }
         return self::bcbindec($value != '' ? $value : '0');
     }
 
     /**
      * Bitwise OR two arbitrarily large numbers together.
+     *
+     * @param string $left
+     * @param string $right
+     * @return string
      */
     public static function bcor($left, $right)
     {
         $len = self::_bitwise($left, $right);
 
         $value = '';
-        for ($i=0; $i<$len; $i++) {
-            $value .= (($left{$i} + 0) | ($right{$i} + 0)) ? '1' : '0';
+        for ($i = 0; $i < $len; $i++) {
+            $value .= (($left[$i] + 0) | ($right[$i] + 0)) ? '1' : '0';
         }
         return self::bcbindec($value != '' ? $value : '0');
     }
 
     /**
      * Bitwise XOR two arbitrarily large numbers together.
+     *
+     * @param string $left
+     * @param string $right
+     * @return string
      */
     public static function bcxor($left, $right)
     {
         $len = self::_bitwise($left, $right);
 
         $value = '';
-        for ($i=0; $i<$len; $i++) {
-            $value .= (($left{$i} + 0) ^ ($right{$i} + 0)) ? '1' : '0';
+        for ($i = 0; $i < $len; $i++) {
+            $value .= (($left[$i] + 0) ^ ($right[$i] + 0)) ? '1' : '0';
         }
         return self::bcbindec($value != '' ? $value : '0');
     }
 
     /**
      * Bitwise NOT two arbitrarily large numbers together.
+     *
+     * @param string $left
+     * @param int    $bits
+     * @return string
      */
     public static function bcnot($left, $bits = null)
     {
         $right = 0;
         $len = self::_bitwise($left, $right, $bits);
         $value = '';
-        for ($i=0; $i<$len; $i++) {
-            $value .= $left{$i} == '1' ? '0' : '1';
+        for ($i = 0; $i < $len; $i++) {
+            $value .= $left[$i] == '1' ? '0' : '1';
         }
         return self::bcbindec($value);
     }
@@ -152,24 +185,34 @@ abstract class BC
     /**
      * Shift number to the left
      *
+     * @param string  $num
      * @param integer $bits Total bits to shift
+     * @return string
      */
-    public static function bcleft($num, $bits) {
+    public static function bcleft($num, $bits)
+    {
         return bcmul($num, bcpow('2', $bits));
     }
 
     /**
      * Shift number to the right
      *
+     * @param string  $num
      * @param integer $bits Total bits to shift
+     * @return string|null
      */
-    public static function bcright($num, $bits) {
+    public static function bcright($num, $bits)
+    {
         return bcdiv($num, bcpow('2', $bits));
     }
 
     /**
      * Determine how many bits are needed to store the number rounded to the
      * nearest bit boundary.
+     *
+     * @param string $num
+     * @param int    $boundary
+     * @return float|int
      */
     public static function bits_needed($num, $boundary = 4)
     {
@@ -184,6 +227,10 @@ abstract class BC
 
     /**
      * BC Math function to return an arbitrarily large random number.
+     *
+     * @param string $min
+     * @param string $max
+     * @return string
      */
     public static function bcrand($min, $max = null)
     {
@@ -194,7 +241,7 @@ abstract class BC
 
         // swap values if $min > $max
         if (bccomp($min, $max) == 1) {
-            list($min,$max) = array($max,$min);
+            list($min, $max) = array($max, $min);
         }
 
         return bcadd(
@@ -215,13 +262,18 @@ abstract class BC
 
     /**
      * Computes the natural logarithm using a series.
-     * @author Thomas Oldbury.
+     *
+     * @param string $num
+     * @param int    $iter
+     * @param int    $scale
+     * @return string
+     * @author  Thomas Oldbury.
      * @license Public domain.
      */
     public static function bclog($num, $iter = 10, $scale = 100)
     {
         $log = "0.0";
-        for($i = 0; $i < $iter; $i++) {
+        for ($i = 0; $i < $iter; $i++) {
             $pow = 1 + (2 * $i);
             $mul = bcdiv("1.0", $pow, $scale);
             $fraction = bcmul($mul, bcpow(bcsub($num, "1.0", $scale) / bcadd($num, "1.0", $scale), $pow, $scale), $scale);
@@ -232,12 +284,23 @@ abstract class BC
 
     /**
      * Computes the base2 log using baseN log.
+     *
+     * @param string $num
+     * @param int    $iter
+     * @param int    $scale
+     * @return string|null
      */
     public static function bclog2($num, $iter = 10, $scale = 100)
     {
         return bcdiv(self::bclog($num, $iter, $scale), self::bclog("2", $iter, $scale), $scale);
     }
 
+    /**
+     * Rounds fractions down
+     *
+     * @param string $num
+     * @return string
+     */
     public static function bcfloor($num)
     {
         if (substr($num, 0, 1) == '-') {
@@ -246,6 +309,12 @@ abstract class BC
         return bcadd($num, 0, 0);
     }
 
+    /**
+     * Rounds fractions up
+     *
+     * @param string $num
+     * @return string
+     */
     public static function bcceil($num)
     {
         if (substr($num, 0, 1) == '-') {
@@ -258,7 +327,7 @@ abstract class BC
      * Compare two numbers and return -1, 0, 1 depending if the LEFT number is
      * < = > the RIGHT.
      *
-     * @param string|integer $left Left side operand
+     * @param string|integer $left  Left side operand
      * @param string|integer $right Right side operand
      * @return integer Return -1,0,1 for <=> comparison
      */
@@ -272,6 +341,11 @@ abstract class BC
 
     /**
      * Internal function to prepare for bitwise operations
+     *
+     * @param string $left
+     * @param string $right
+     * @param int    $bits
+     * @return mixed
      */
     private static function _bitwise(&$left, &$right, $bits = null)
     {
@@ -279,12 +353,12 @@ abstract class BC
             $bits = max(self::bits_needed($left), self::bits_needed($right));
         }
 
-        $left  = self::bcdecbin($left);
+        $left = self::bcdecbin($left);
         $right = self::bcdecbin($right);
 
-        $len   = max(strlen($left), strlen($right), (int)$bits);
+        $len = max(strlen($left), strlen($right), (int)$bits);
 
-        $left  = sprintf("%0{$len}s", $left);
+        $left = sprintf("%0{$len}s", $left);
         $right = sprintf("%0{$len}s", $right);
 
         return $len;
