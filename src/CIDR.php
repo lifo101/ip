@@ -230,7 +230,7 @@ class CIDR
     /**
      * Returns true if the IP is an IPv4
      *
-     * @return boolean
+     * @return bool
      */
     public function isIPv4()
     {
@@ -240,7 +240,7 @@ class CIDR
     /**
      * Returns true if the IP is an IPv6
      *
-     * @return boolean
+     * @return bool
      */
     public function isIPv6()
     {
@@ -284,7 +284,7 @@ class CIDR
      *
      * Prefix sensitive.
      *
-     * @param boolean $ignorePrefix If true the arbitrary start-end range is
+     * @param bool $ignorePrefix If true the arbitrary start-end range is
      *                              returned. default=false.
      */
     public function getRange($ignorePrefix = false)
@@ -316,7 +316,7 @@ class CIDR
      *
      * Prefix sensitive.
      *
-     * @param boolean $ignorePrefix If true the arbitrary start-end range is
+     * @param bool $ignorePrefix If true the arbitrary start-end range is
      *                              returned. default=false.
      */
     public function getNetwork($ignorePrefix = false)
@@ -334,7 +334,7 @@ class CIDR
      *
      * Prefix sensitive.
      *
-     * @param boolean $ignorePrefix If true the arbitrary start-end range is
+     * @param bool $ignorePrefix If true the arbitrary start-end range is
      *                              returned. default=false.
      */
     public function getBroadcast($ignorePrefix = false)
@@ -361,7 +361,7 @@ class CIDR
      *
      * Prefix sensitive.
      *
-     * @param boolean $ignorePrefix If true the arbitrary start-end range is
+     * @param bool $ignorePrefix If true the arbitrary start-end range is
      *                              returned. default=false.
      */
     public function getTotal($ignorePrefix = false)

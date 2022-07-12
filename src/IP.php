@@ -60,7 +60,7 @@ abstract class IP
     /**
      * Convert a decimal string into a human readable IP address.
      *
-     * @param decimal $decimal Decimal number to convert into presentational IP string.
+     * @param string $decimal Decimal number to convert into presentational IP string.
      * @param integer $version Force IP version to 4 or 6. Leave null for automatic.
      */
     public static function inet_dtop($decimal, $version = null)
@@ -172,7 +172,7 @@ abstract class IP
      *      to_ipv6("10.10.10.10") == a0a:a0a
      *
      * @param string $ip IPv4 address.
-     * @param boolean $mapped If true a Full IPv6 address is returned within the
+     * @param bool $mapped If true a Full IPv6 address is returned within the
      *                        official ipv4to6 mapped space "0:0:0:0:0:ffff:x:x"
      */
     public static function to_ipv6($ip, $mapped = false)
